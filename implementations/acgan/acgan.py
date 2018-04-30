@@ -126,8 +126,8 @@ if __name__ == '__main__':
                         help='number of cpu threads to use during batch generation (default: 8)')
     parser.add_argument('--disable_gpu', action='store_true', 
                         help='Flag whether to disable GPU')
-    parser.add_argument('--enable_tensorboard', action='store_false', 
-                        help='Flag whether to enable TensorBoard')
+    parser.add_argument('--disable_tensorboard', action='store_true', 
+                        help='Flag whether to disable TensorBoard')
     parser.add_argument('--multi_gpu', action='store_true', 
                         help='Flag whether to use multiple GPUs.')
 
@@ -136,7 +136,7 @@ if __name__ == '__main__':
 
     os.makedirs(opt.saved_img_dir, exist_ok=True)
     os.makedirs(opt.saved_models, exist_ok=True)
-    if opt.enable_tensorboard:
+    if not opt.disable_tensorboard:
         sys.path.append("..")
         from logger import Logger  #
         logger = Logger('logs')
@@ -239,15 +239,14 @@ if __name__ == '__main__':
             pred = torch.cat((real_aux.detach(), fake_aux.detach()))
             gt = torch.cat((labels, gen_labels))
             d_acc = torch.mean((torch.argmax(pred, dim=1) == gt).float().to("cpu"))
-        if opt.enable_tensorboard:  # record training curves
-            logger.scalar_summary("D loss: ", d_loss.item(), epoch)  #
-            logger.scalar_summary("G loss: ", g_loss.item(), epoch)  #
-            logger.scalar_summary("D acc: ", 100 * d_acc, epoch)  #
-        else:
             print ("[Epoch {}/{}] [Batch {}/{}] [D loss: {}, acc: {}%%] [G loss: {}]"\
                    .format(epoch, opt.n_epochs,
                            i, len(dataloader),
                            d_loss.item(), 100 * d_acc,
                            g_loss.item()))
+        if not opt.disable_tensorboard:  # record training curves
+            logger.scalar_summary("D loss: ", d_loss.item(), epoch)  #
+            logger.scalar_summary("G loss: ", g_loss.item(), epoch)  #
+            logger.scalar_summary("D acc: ", 100 * d_acc, epoch)  #
 
         torch.save(generator.state_dict(), "{}/generator.th".format(opt.saved_models))
