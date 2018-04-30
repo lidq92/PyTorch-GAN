@@ -244,9 +244,10 @@ if __name__ == '__main__':
             logger.scalar_summary("G loss: ", g_loss.item(), epoch)  #
             logger.scalar_summary("D acc: ", 100 * d_acc, epoch)  #
         else:
-            print ("[Epoch {}/{}] [Batch {}/{}] [D loss: {}, acc: {}%%] [G loss: {}]".format(epoch, opt.n_epochs,
-                                  i, len(dataloader),
-                                  d_loss.item(), 100 * d_acc,
-                                  g_loss.item()))
+            print ("[Epoch {}/{}] [Batch {}/{}] [D loss: {}, acc: {}%%] [G loss: {}]"\
+                   .format(epoch, opt.n_epochs,
+                           i, len(dataloader),
+                           d_loss.item(), 100 * d_acc,
+                           g_loss.item()))
 
         torch.save(generator.state_dict(), "{}/generator.th".format(opt.saved_models))
