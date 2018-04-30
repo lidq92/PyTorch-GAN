@@ -1,5 +1,5 @@
 import argparse
-import os
+import os, sys
 import torch
 import torch.nn as nn
 import torchvision.transforms as transforms
@@ -24,7 +24,7 @@ class Generator(nn.Module):
         self.label_emb = nn.Embedding(opt.n_classes, opt.latent_dim)
 
         self.init_size = opt.img_size // 4  # Initial size before upsampling
-        self.l1 = nn.Sequential(nn.Linear(opt.latent_dim, 128*self.init_size**2))
+        self.l1 = nn.Sequential(nn.Linear(opt.latent_dim, 128 * self.init_size ** 2))
 
         self.conv_blocks = nn.Sequential(
             nn.BatchNorm2d(128),
@@ -72,10 +72,10 @@ class Discriminator(nn.Module):
         ds_size = opt.img_size // 2 ** 4
 
         # Output layers
-        self.adv_layer = nn.Sequential( nn.Linear(128*ds_size**2, 1),
+        self.adv_layer = nn.Sequential( nn.Linear(128 * ds_size ** 2, 1),
                                         nn.Sigmoid())
-        self.aux_layer = nn.Sequential( nn.Linear(128*ds_size**2, opt.n_classes),
-                                        nn.Softmax())
+        self.aux_layer = nn.Sequential( nn.Linear(128 * ds_size ** 2, opt.n_classes),
+                                        nn.Softmax(dim=1))
 
     def forward(self, img):
         out = self.conv_blocks(img)
@@ -114,7 +114,8 @@ if __name__ == '__main__':
                         help='dir of saved images (default: save_models)')
     parser.add_argument('--n_cpu', type=int, default=8,
                         help='number of cpu threads to use during batch generation (default: 8)')
-    parser.add_argument('--disable_gpu', action='store_true', help='Flag whether to use disable GPU')
+    parser.add_argument('--disable_gpu', action='store_true', help='Flag whether to disable GPU')
+    parser.add_argument('--enable_tensorboard', action='store_false', help='Flag whether to enable TensorBoard')
     parser.add_argument('--multi_gpu', action='store_true', help='Flag whether to use multiple GPUs.')
 
     opt = parser.parse_args()
@@ -122,6 +123,25 @@ if __name__ == '__main__':
 
     os.makedirs(opt.saved_img_dir, exist_ok=True)
     os.makedirs(opt.saved_models, exist_ok=True)
+    if opt.enable_tensorboard:
+        sys.path.append("..")
+        from logger import Logger  #
+        logger = Logger('logs')
+
+    # Initialize generator and discriminator
+    device = torch.device("cuda" if not opt.disable_gpu and torch.cuda.is_available() else "cpu")
+    generator = Generator().to(device)
+    discriminator = Discriminator().to(device)
+    if opt.multi_gpu and torch.cuda.device_count() > 1:
+        generator       = nn.DataParallel(generator)
+        discriminator   = nn.DataParallel(discriminator)
+        opt.batch_size *= torch.cuda.device_count()
+    generator.apply(weights_init_normal)
+    discriminator.apply(weights_init_normal)
+
+    # Loss functions
+    adversarial_loss = nn.BCELoss().to(device)
+    auxiliary_loss = nn.CrossEntropyLoss().to(device)
 
     # Configure data loader
     os.makedirs('../../data/mnist', exist_ok=True)
@@ -132,17 +152,6 @@ if __name__ == '__main__':
                        ])
     trainset = datasets.MNIST('../../data/mnist', train=True, download=True, transform=transform)
     dataloader = torch.utils.data.DataLoader(trainset, batch_size=opt.batch_size, shuffle=True, num_workers=opt.n_cpu)
-
-    # Initialize generator and discriminator
-    device = torch.device("cuda" if not opt.disable_gpu and torch.cuda.is_available() else "cpu")
-    generator = Generator().to(device)
-    discriminator = Discriminator().to(device)
-    generator.apply(weights_init_normal)
-    discriminator.apply(weights_init_normal)
-
-    # Loss functions
-    adversarial_loss = nn.BCELoss().to(device)
-    auxiliary_loss = nn.CrossEntropyLoss().to(device)
 
     # Optimizers
     optimizer_G = torch.optim.Adam(generator.parameters(), lr=opt.lr, betas=(opt.b1, opt.b2))
@@ -211,9 +220,14 @@ if __name__ == '__main__':
             pred = torch.cat((real_aux.detach(), fake_aux.detach()))
             gt = torch.cat((labels, gen_labels))
             d_acc = torch.mean((torch.argmax(pred, dim=1) == gt).float().to("cpu"))
+        if opt.enable_tensorboard:  # record training curves
+            logger.scalar_summary("D loss: ", d_loss.item(), epoch)  #
+            logger.scalar_summary("G loss: ", g_loss.item(), epoch)  #
+            logger.scalar_summary("D acc: ", 100 * d_acc, epoch)  #
+        else:
             print ("[Epoch {}/{}] [Batch {}/{}] [D loss: {}, acc: {}%%] [G loss: {}]".format(epoch, opt.n_epochs,
                                                                                              i, len(dataloader),
                                                                                              d_loss.item(), 100 * d_acc,
                                                                                              g_loss.item()))
 
-        torch.save(generator.state_dict(), "{}/generator-{}.th".format(opt.saved_models, epoch))
+        torch.save(generator.state_dict(), "{}/generator.th".format(opt.saved_models))
