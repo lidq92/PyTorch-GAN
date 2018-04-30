@@ -16,6 +16,7 @@ This repo is on the basis of [eriklindernoren/PyTorch-GAN](https://github.com/er
   * [Installation](#installation)
   * [Implementations](#implementations)
     + [Auxiliary Classifier GAN](#auxiliary-classifier-gan)
+    + [Adversarial Autoencoder](#adversarial-autoencoder)
 
 ## Installation
 ```bash
@@ -29,7 +30,6 @@ pip install -r requirements.txt
 ## Implementations   
 ### Auxiliary Classifier GAN
 [_Augustus Odena_](https://dblp.uni-trier.de/pers/hd/o/Odena:Augustus), [_Christopher Olah_](https://dblp.uni-trier.de/pers/hd/o/Olah:Chris), [_Jonathon Shlens_](https://dblp.uni-trier.de/pers/hd/s/Shlens:Jonathon). [Conditional Image Synthesis with Auxiliary Classifier GANs](http://proceedings.mlr.press/v70/odena17a/odena17a.pdf), [ICML 2017](https://icml.cc/Conferences/2017/)
-
 
 #### Abstract
 In this paper we introduce new methods for the improved training of generative adversarial
@@ -54,3 +54,8 @@ python acgan.py
 <p align="center">
     <img src="assets/acgan.gif"\>
 </p>
+
+### Adversarial Autoencoder
+[_Alireza Makhzani_](), [_Jonathon Shlens_](), [_Navdeep Jaitly_](), [_Ian Goodfellow_](), [_Brendan Frey_](). [Adversarial Autoencoder](), [ICLRw 2016]()
+
+TBC.
