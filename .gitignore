@@ -2,5 +2,6 @@
 data/*/
 implementations/*/images
 implementations/*/saved_models
+implementations/*/logs
 
 __pycache__

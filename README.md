@@ -7,6 +7,8 @@ since I focus on getting the core ideas covered instead of getting
 every layer configuration right.
 Contributions and suggestions of GANs to implement are very welcomed.
 
+This repo is on the basis of [eriklindernoren/PyTorch-GAN](https://github.com/eriklindernoren/PyTorch-GAN). Thanks to [_@eriklindernoren_](https://github.com/eriklindernoren).
+
 ## Table of Contents
 - [PyTorch-GAN](#pytorch-gan)
   * [About](#about)
@@ -46,6 +48,7 @@ ImageNet data.
 cd implementations/acgan/
 python acgan.py --help
 python acgan.py
+# tensorboard --logs="logs" --port=6006
 ```
 
 <p align="center">
